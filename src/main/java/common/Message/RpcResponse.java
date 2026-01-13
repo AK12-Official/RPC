@@ -24,7 +24,7 @@ public class RpcResponse implements Serializable {
     private Object data;    //具体数据
 
     //构造成功/失败信息
-    public static RpcResponse sussess(Object data){
+    public static RpcResponse success(Object data){
         return RpcResponse.builder().code(200).data(data).build();
     }
     public static RpcResponse fail(){

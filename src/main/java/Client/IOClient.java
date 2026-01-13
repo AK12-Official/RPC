@@ -15,10 +15,9 @@ import java.net.Socket;
  * @ Author：zh
  * @ Create: 2026/1/13 09:54
  * @ Version: 1.0
- * @ Description:
+ * @ Description:负责底层与服务端的通信，发送request，返回response
  */
 public class IOClient {
-    //这里负责底层与服务端的通信，发送request，返回response
     public static RpcResponse sendRequest(String host, int port, RpcRequest request) {
         try{
             Socket socket = new Socket(host, port);

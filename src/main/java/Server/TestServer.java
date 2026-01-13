@@ -2,7 +2,7 @@ package Server;
 
 import Server.provider.ServiceProvider;
 import Server.server.RpcServer;
-import Server.server.impl.SimpleRPCServer;
+import Server.server.impl.NettyRPCServer;
 import common.service.Impl.UserServiceImpl;
 import common.service.UserService;
 
@@ -22,7 +22,7 @@ public class TestServer {
         ServiceProvider serviceProvider=new ServiceProvider();
         serviceProvider.provideServiceInterface(userService);
 
-        RpcServer rpcServer=new SimpleRPCServer(serviceProvider);
+        RpcServer rpcServer=new NettyRPCServer(serviceProvider);
         rpcServer.start(19999);
     }
 }
