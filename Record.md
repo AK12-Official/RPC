@@ -6,3 +6,9 @@
 学完zookeeper再来继续敲代码
 
 借今天的学习学到了建造者模式，学习了zkp，算是有点收获。
+
+## Day 2
+
+完成了Version 1 part 1 的编写
+遇到的问题有：
+RpcReq/Res无法序列化——没有实现Serializable接口

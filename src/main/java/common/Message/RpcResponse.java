@@ -1,7 +1,9 @@
-package common;
+package common.Message;
 
 import lombok.Builder;
 import lombok.Data;
+
+import java.io.Serializable;
 
 /**
  * ClassName：RpcResponse
@@ -14,7 +16,7 @@ import lombok.Data;
  */
 @Data
 @Builder
-public class RpcResponse {
+public class RpcResponse implements Serializable {
     private int code;       //状态码
 
     private String message; //状态信息
