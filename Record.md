@@ -10,7 +10,7 @@
 ## Day 2
 
 实现了基本的rpc调用
-![.static/img.png](static/img.png)
+![.static/初版最简架构.png](static/初版最简架构.png)
 
 遇到的问题有：
 RpcReq/Res无法序列化——没有实现Serializable接口(好蠢的错误)
@@ -18,12 +18,13 @@ RpcReq/Res无法序列化——没有实现Serializable接口(好蠢的错误)
 进一步熟悉了Java反射、代理技术
 学习了解了netty相关内容
 
-Q：ClientProxy中使用`method.getDeclaringClass().getName()`而不是`proxy.getClass().getName()`
+Q：ClientProxy中使用 `method.getDeclaringClass().getName()`而不是 `proxy.getClass().getName()`
+
 A：
+
 - 代理对象的类名不是接口名：proxy 是 JDK 动态代理生成的代理对象，其类名类似 com.sun.proxy.$Proxy0，不是接口名
 - 在 RPC 中，客户端只持有接口服务端根据接口名查找实现
 - method.getDeclaringClass()返回声明该方法的类，在接口代理场景下就是接口本身
-
 
 ## Day 3
 
@@ -31,12 +32,63 @@ A：
 进一步了解了netty相关技术
 
 netty的优势：
+
 - io传输由BIO ->NIO模式；底层使用池化技术复用资源
 - 可以自主编写 编码/解码器，序列化器等等，可拓展性和灵活性高
 - 支持TCP,UDP多种传输协议；支持堵塞返回和异步返回
 - ......
 
-netty执行流程
-客户端调用RpcClient.sendRequest方法 --->NettyClientInitializer-->Encoder编码 --->发送
-服务端RpcServer接收--->NettyServerInitializer-->Decoder解码--->NettyRPCServerHandler ---->getResponse调用---> 返回结果
-客户端接收--->NettyServerInitializer-->Decoder解码--->NettyRPCServerHandler处理结果并返回给上层
+netty执行流程：
+
+- 客户端调用RpcClient.sendRequest方法 --->NettyClientInitializer-->Encoder编码 --->发送
+- 服务端RpcServer接收--->NettyServerInitializer-->Decoder解码--->NettyRPCServerHandler ---->getResponse调用---> 返回结果
+- 客户端接收--->NettyServerInitializer-->Decoder解码--->NettyRPCServerHandler处理结果并返回给上层
+
+## Day 4
+
+引入Zookeeper作为注册中心：
+现有的实现下，调用服务时，目标的ip地址和端口port都是写死的，默认本机地址和9999端口号
+在实际场景下，服务的地址和端口会被记录到【注册中心】中。服务端上线时，在注册中心注册自己的服务与对应的地址，而客户端调用服务时，去注册中心根据服务名找到对应的服务端地址。
+
+客户端新增了ServiceCenter的接口和ZKServiceCenter的实现
+服务端改动了注册服务相关的功能
+
+**Zookeeper的作用和角色：**
+
+Zookeeper承担**服务注册中心（Service Registry）**的角色，主要负责：
+
+1. **服务注册（服务端）**：
+
+   - 服务端启动时，通过 `ZKServiceRegister`将服务名和服务器地址注册到Zookeeper
+   - 创建永久节点 `/MyRPC/{serviceName}`存储服务名
+   - 创建临时节点 `/MyRPC/{serviceName}/{host:port}`存储服务地址（临时节点会在服务下线时自动删除，实现服务状态感知）
+2. **服务发现（客户端）**：
+
+   - 客户端调用服务时，通过 `ZKServiceCenter`根据服务名查询Zookeeper获取服务地址
+   - 客户端不再需要硬编码服务地址，实现了服务地址的动态获取和解耦
+3. **解决的问题**：
+
+   - **解耦**：客户端和服务端不需要知道对方的具体地址
+   - **动态性**：服务地址可以动态变化，客户端能够自动发现新的服务实例
+   - **高可用**：支持多个服务实例，服务端下线时临时节点自动删除，客户端能感知服务状态
+
+**梳理一下整个请求发起、执行、返回的流程**
+
+> 前提：对客户端来说 远程服务是透明的 它就认为是调用了本地的方法（这里是UserService）并得到了结果
+
+1. 客户端调用某个方法(通过代理对象 但是客户端当成实际对象使用)
+2. 代理对象会代理这个方法的执行，先构建一个RpcRequest对象 然后使用RpcClient(这里是 `NettyRpcClient`)发起一次远程调用(全过程对客户端无感)
+3. RpcClient会从服务中心(目前使用的是ZKP)获取到要调用的方法的host和port 然后底层使用Netty和服务端建立连接并发送request
+4. 服务器接收到request 交给NettyHandler处理 某个handler(这里是 `NettyRPCServerHandler`)会处理这个request请求 反射调用对应方法并返回结果response
+5. 客户端的RpcClient(这里还是 `NettyRpcClient`)接收到response之后会拆解还原 返回最终的数据给客户端
+
+**服务器的启动、服务注册、监听流程**
+
+1. 创建服务实现类的实例(这里是 `UserServiceImpl`) 然后创建 `ServiceProvider`对象并传入服务器地址和端口
+2. 调用 `ServiceProvider`的 `provideServiceInterface`方法注册服务接口 该方法会将服务接口名和实例映射关系存储到本地 `interfaceProvider`中 同时通过 `ZKServiceRegister`将服务注册到 `Zookeeper`注册中心(创建永久节点/MyRPC/{serviceName}和临时节点/MyRPC/{serviceName}/{host:port})
+3. 创建 `NettyRPCServer`实例 传入 `ServiceProvider `然后调用start方法启动服务器监听指定端口
+4. `NettyRPCServer`启动时会创建 `bossGroup`和 `workGroup`线程组 配置 `ServerBootstrap`并初始化管道处理器链(包括 `LengthFieldBasedFrameDecoder`解码、`LengthFieldPrepender`编码、`ObjectEncoder`序列化、`ObjectDecoder`反序列化、`NettyRPCServerHandler`业务处理) 最后绑定端口并阻塞监听
+5. 当接收到客户端请求时 `NettyRPCServerHandler`会从 `ServiceProvider`获取对应的服务实例 通过反射调用服务方法并封装结果返回给客户端
+
+当前架构：
+![.static/引入Netty和ZKP.png](static/引入Netty和ZKP.png)

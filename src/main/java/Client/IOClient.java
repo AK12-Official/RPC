@@ -17,6 +17,7 @@ import java.net.Socket;
  * @ Version: 1.0
  * @ Description:负责底层与服务端的通信，发送request，返回response
  */
+@Deprecated
 public class IOClient {
     public static RpcResponse sendRequest(String host, int port, RpcRequest request) {
         try{

@@ -16,9 +16,12 @@ import common.service.UserService;
 public class TestClient {
     public static void main(String[] args) {
         //创建ClientProxy对象
-        ClientProxy clientProxy = new ClientProxy("127.0.0.1", 19999);
+        ClientProxy clientProxy=new ClientProxy();  //不再需要像旧版本一样写死 ip & port
+        //ClientProxy clientProxy = new ClientProxy("127.0.0.1", 19999);
+
         //通过ClientProxy对象获取代理对象
         UserService proxy = clientProxy.getProxy(UserService.class);
+
         //调用代理对象的方法
         User user = proxy.getUserByUserId(1);
         System.out.println("User Got From Server: " + user);
