@@ -92,3 +92,15 @@ Zookeeper承担**服务注册中心（Service Registry）**的角色，主要负
 
 当前架构：
 ![.static/引入Netty和ZKP.png](static/引入Netty和ZKP.png)
+
+
+## Day 5
+
+> ChannelHandler 是对 Channel 中数据的处理器，这些处理器可以是系统本身定义好的编解码器，也可以是用户自定义的。这些处理器会被统一添加到一个 ChannelPipeline 的对象中，然后按照添加的类别对 Channel 中的数据进行依次处理。
+实现了自定义编解码器
+- encoder 加工出一条字节数组
+- decoder 读取字节数组，获得里面的对象
+这么做：
+- 将编码解码的过程进行封装，代码变得简洁易读，维护更加方便 
+- 在内部实现消息头的加工，解决沾包问题 
+- 消息头中加入messageType消息类型，对消息的读取机制有了进一步的拓展
