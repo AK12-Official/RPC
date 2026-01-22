@@ -18,6 +18,7 @@ import java.net.Socket;
  * @ Version: 1.0
  * @ Description: 简易RPC客户端，基于Socket编程实现
  */
+@Deprecated
 public class SimpleSocketRpcClient implements RpcClient {
     private String host;
     private int port;

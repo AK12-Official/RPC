@@ -19,6 +19,7 @@ import java.net.Socket;
  * @ Version: 1.0
  * @ Description:
  */
+@Deprecated
 @AllArgsConstructor
 public class SimpleRPCServer implements RpcServer {
     private ServiceProvider serviceProvider;
