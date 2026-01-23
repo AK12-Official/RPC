@@ -21,6 +21,8 @@ public class watchZK {
     //本地缓存
     serviceCache cache;
 
+    private static final String RETRY_PATH = "CanRetry";
+
     public watchZK(CuratorFramework client,serviceCache  cache){
         this.client=client;
         this.cache=cache;
@@ -45,6 +47,16 @@ public class watchZK {
                     case "NODE_CREATED": // 监听器第一次执行时节点存在也会触发次事件
                         String[] pathList= pasrePath(childData1);
                         if(pathList.length<=2) break;
+
+                        // /CanRetry/{serviceName}
+                        if (RETRY_PATH.equals(pathList[1])) {
+                            if (pathList.length >= 3) {
+                                cache.addRetryServiceToCache(pathList[2]);
+                            }
+                            break;
+                        }
+
+                        if(pathList.length<=2) break;
                         else {
                             String serviceName=pathList[1];
                             String address=pathList[2];
@@ -60,11 +72,24 @@ public class watchZK {
                         }
                         String[] oldPathList=pasrePath(childData);
                         String[] newPathList=pasrePath(childData1);
-                        cache.replaceServiceAddress(oldPathList[1],oldPathList[2],newPathList[2]);
+                        // 白名单节点无需当作服务地址更新
+                        if (!(oldPathList.length >= 2 && RETRY_PATH.equals(oldPathList[1]))) {
+                            cache.replaceServiceAddress(oldPathList[1],oldPathList[2],newPathList[2]);
+                        }
                         System.out.println("修改后的数据: " + new String(childData1.getData()));
                         break;
                     case "NODE_DELETED": // 节点删除
                         String[] pathList_d= pasrePath(childData);
+                        if(pathList_d.length<=2) break;
+
+                        // /CanRetry/{serviceName}
+                        if (RETRY_PATH.equals(pathList_d[1])) {
+                            if (pathList_d.length >= 3) {
+                                cache.removeRetryServiceFromCache(pathList_d[2]);
+                            }
+                            break;
+                        }
+
                         if(pathList_d.length<=2) break;
                         else {
                             String serviceName=pathList_d[1];

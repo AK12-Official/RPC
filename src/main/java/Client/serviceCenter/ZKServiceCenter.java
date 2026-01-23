@@ -51,6 +51,14 @@ public class ZKServiceCenter implements ServiceCenter{
         watchZK watcher=new watchZK(client,cache);
         //监听启动
         watcher.watchToUpdate(ROOT_PATH);
+
+        // 冷启动时拉取一次白名单，避免在 watcher 首次同步前 checkRetry 误判
+        try {
+            List<String> retryList = client.getChildren().forPath("/" + RETRY);
+            cache.replaceRetryWhitelist(retryList);
+        } catch (Exception e) {
+            // 白名单节点不存在或网络抖动时，不影响主流程，后续由 watcher 更新
+        }
         //初始化负载均衡器 默认使用一致性哈希算法
         this.loadBalance=new ConsistencyHashBalance();
     }
@@ -94,18 +102,9 @@ public class ZKServiceCenter implements ServiceCenter{
 
     @Override
     public boolean checkRetry(String serviceName) {
-        boolean canRetry =false;
-        try {
-            List<String> serviceList = client.getChildren().forPath("/" + RETRY);
-            for(String s:serviceList){
-                //如果列表中有该服务
-                if(s.equals(serviceName)){
-                    System.out.println("服务"+serviceName+"在白名单上，可进行重试");
-                    canRetry=true;
-                }
-            }
-        }catch (Exception e) {
-            e.printStackTrace();
+        boolean canRetry = cache.isInRetryWhitelist(serviceName);
+        if (canRetry) {
+            System.out.println("服务"+serviceName+"在白名单上，可进行重试");
         }
         return canRetry;
     }

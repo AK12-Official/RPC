@@ -1,9 +1,11 @@
 package Client.cache;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * ClassName：serviceCache
@@ -17,19 +19,19 @@ import java.util.Map;
 public class serviceCache {
     //key: serviceName 服务名
     //value： addressList 服务提供者列表
-    private static Map<String, List<String>> cache=new HashMap<>();
+    private static final Map<String, List<String>> cache = new ConcurrentHashMap<>();
+
+    // 白名单（允许重试的服务名集合）
+    private static final Set<String> retryWhitelist = ConcurrentHashMap.newKeySet();
 
     //添加服务
     public void addServcieToCache(String serviceName,String address){
-        if(cache.containsKey(serviceName)){
-            List<String> addressList = cache.get(serviceName);
+        cache.compute(serviceName, (k, v) -> {
+            List<String> addressList = (v == null) ? new CopyOnWriteArrayList<>() : v;
             addressList.add(address);
-            System.out.println("将name为"+serviceName+"和地址为"+address+"的服务添加到本地缓存中");
-        }else {
-            List<String> addressList=new ArrayList<>();
-            addressList.add(address);
-            cache.put(serviceName,addressList);
-        }
+            return addressList;
+        });
+        System.out.println("将name为"+serviceName+"和地址为"+address+"的服务添加到本地缓存中");
     }
 
     //修改服务地址
@@ -55,7 +57,30 @@ public class serviceCache {
     //从缓存中删除服务地址
     public void delete(String serviceName,String address){
         List<String> addressList = cache.get(serviceName);
-        addressList.remove(address);
-        System.out.println("将name为"+serviceName+"和地址为"+address+"的服务从本地缓存中删除");
+        if (addressList != null) {
+            addressList.remove(address);
+            System.out.println("将name为"+serviceName+"和地址为"+address+"的服务从本地缓存中删除");
+        }
+    }
+
+    // ===== 重试白名单缓存 =====
+    public boolean isInRetryWhitelist(String serviceName) {
+        return retryWhitelist.contains(serviceName);
+    }
+
+    public void addRetryServiceToCache(String serviceName) {
+        retryWhitelist.add(serviceName);
+    }
+
+    public void removeRetryServiceFromCache(String serviceName) {
+        retryWhitelist.remove(serviceName);
+    }
+
+    public void replaceRetryWhitelist(List<String> serviceNames) {
+        retryWhitelist.clear();
+        if (serviceNames == null) {
+            return;
+        }
+        retryWhitelist.addAll(serviceNames);
     }
 }
