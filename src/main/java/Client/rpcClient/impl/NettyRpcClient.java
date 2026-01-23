@@ -31,9 +31,11 @@ public class NettyRpcClient implements RpcClient {
     private static final EventLoopGroup eventLoopGroup;
 
     private ServiceCenter serviceCenter;
-    public NettyRpcClient() throws InterruptedException {
-    this.serviceCenter=new ZKServiceCenter();
+
+    public NettyRpcClient(ServiceCenter serviceCenter) throws InterruptedException {
+        this.serviceCenter = serviceCenter;
     }
+
     //netty客户端初始化
     static {
         eventLoopGroup = new NioEventLoopGroup();
@@ -42,6 +44,7 @@ public class NettyRpcClient implements RpcClient {
                 //NettyClientInitializer这里 配置netty对消息的处理机制
                 .handler(new NettyClientInitializer());
     }
+
     @Override
     public RpcResponse sendRequest(RpcRequest request) {
         //从注册中心获取host post
@@ -66,7 +69,7 @@ public class NettyRpcClient implements RpcClient {
 
             System.out.println(response);
             return response;
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;    //Should not reach here
