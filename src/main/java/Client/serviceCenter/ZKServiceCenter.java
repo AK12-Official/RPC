@@ -2,6 +2,8 @@ package Client.serviceCenter;
 
 import Client.cache.serviceCache;
 import Client.serviceCenter.ZkWatcher.watchZK;
+import Client.serviceCenter.balance.Impl.ConsistencyHashBalance;
+import Client.serviceCenter.balance.LoadBalance;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -28,6 +30,8 @@ public class ZKServiceCenter implements ServiceCenter{
 
     private serviceCache cache;
 
+    private LoadBalance loadBalance;
+
     //负责zookeeper客户端的初始化 并与zookeeper服务端进行连接
     public ZKServiceCenter() throws InterruptedException {
         //指数时间重试
@@ -46,6 +50,13 @@ public class ZKServiceCenter implements ServiceCenter{
         watchZK watcher=new watchZK(client,cache);
         //监听启动
         watcher.watchToUpdate(ROOT_PATH);
+        //初始化负载均衡器 默认使用一致性哈希算法
+        this.loadBalance=new ConsistencyHashBalance();
+    }
+
+    public ZKServiceCenter(LoadBalance loadBalance) throws InterruptedException {
+        this();
+        this.loadBalance = loadBalance;
     }
 
     //根据服务名返回地址
@@ -59,9 +70,9 @@ public class ZKServiceCenter implements ServiceCenter{
             if(serviceList==null) {
                 serviceList=client.getChildren().forPath("/" + serviceName);
             }
-            // 这里默认用的第一个，后面加负载均衡
-            String string = serviceList.get(0);
-            return parseAddress(string);
+            // 负载均衡得到地址
+            String address = loadBalance.balance(serviceList);
+            return parseAddress(address);
         } catch (Exception e) {
             e.printStackTrace();
         }
