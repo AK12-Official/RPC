@@ -52,6 +52,9 @@ public class ClientProxy implements InvocationHandler {
             //只调用一次
             response= rpcClient.sendRequest(request);
         }
+        if (response == null) {
+            throw new RuntimeException("RPC调用失败：response为空");
+        }
         return response.getData();
     }
 

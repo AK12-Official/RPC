@@ -5,6 +5,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.AttributeKey;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * ClassName：NettyClientHandler
  * Package: Client.netty.handler
@@ -18,15 +20,24 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<RpcResponse>
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RpcResponse response) throws Exception {
         // 接收到response, 给channel设计别名，让sendRequest里读取response
-        AttributeKey<RpcResponse> key = AttributeKey.valueOf("RPCResponse");
-        ctx.channel().attr(key).set(response);
-        ctx.channel().close();
+        AttributeKey<CompletableFuture<RpcResponse>> key = AttributeKey.valueOf("RPCResponseFuture");
+        CompletableFuture<RpcResponse> future = ctx.channel().attr(key).get();
+        if (future != null) {
+            future.complete(response);
+            ctx.channel().attr(key).set(null);
+        }
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         //异常处理
         cause.printStackTrace();
+        AttributeKey<CompletableFuture<RpcResponse>> key = AttributeKey.valueOf("RPCResponseFuture");
+        CompletableFuture<RpcResponse> future = ctx.channel().attr(key).get();
+        if (future != null) {
+            future.completeExceptionally(cause);
+            ctx.channel().attr(key).set(null);
+        }
         ctx.close();
     }
 }

@@ -15,6 +15,10 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.AttributeKey;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 /**
  * ClassName：NettyRpcClient
@@ -29,6 +33,7 @@ public class NettyRpcClient implements RpcClient {
 
     private static final Bootstrap bootstrap;
     private static final EventLoopGroup eventLoopGroup;
+    private static final ConcurrentHashMap<InetSocketAddress, Channel> CHANNEL_CACHE = new ConcurrentHashMap<>();
 
     private ServiceCenter serviceCenter;
 
@@ -49,29 +54,61 @@ public class NettyRpcClient implements RpcClient {
     public RpcResponse sendRequest(RpcRequest request) {
         //从注册中心获取host post
         InetSocketAddress address = serviceCenter.serviceDiscovery(request.getInterfaceName());
-        String host = address.getHostName();
-        int port = address.getPort();
         try {
-            //创建一个channelFuture对象，代表这一个操作事件，sync方法表示堵塞直到connect完成
-            ChannelFuture channelFuture = bootstrap.connect(host, port).sync();
-            //channel表示一个连接的单位，类似socket
-            Channel channel = channelFuture.channel();
-            //发送数据
-            channel.writeAndFlush(request);
-            //sync()阻塞获取结果
-            channel.closeFuture().sync();
-            // 阻塞的获得结果，通过给channel设计别名，获取特定名字下的channel中的内容（这个在hanlder中设置）
-            // AttributeKey是，线程隔离的，不会有线程安全问题。
-            // 当前场景下选择堵塞获取结果
-            // 其它场景也可以选择添加监听器的方式来异步获取结果 channelFuture.addListener...
-            AttributeKey<RpcResponse> key = AttributeKey.valueOf("RPCResponse");
-            RpcResponse response = channel.attr(key).get();
-
-            System.out.println(response);
-            return response;
+            return sendWithRetry(address, request);
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;    //Should not reach here
+    }
+
+    private RpcResponse sendWithRetry(InetSocketAddress address, RpcRequest request)
+            throws InterruptedException, ExecutionException, ClosedChannelException {
+        try {
+            return sendOnce(address, request);
+        } catch (ClosedChannelException e) {
+            Channel cached = CHANNEL_CACHE.get(address);
+            if (cached != null) {
+                CHANNEL_CACHE.remove(address, cached);
+            }
+            return sendOnce(address, request);
+        }
+    }
+
+    private RpcResponse sendOnce(InetSocketAddress address, RpcRequest request)
+            throws InterruptedException, ExecutionException, ClosedChannelException {
+        Channel channel = getChannel(address);
+        if (!channel.isActive()) {
+            CHANNEL_CACHE.remove(address, channel);
+            channel = getChannel(address);
+        }
+        CompletableFuture<RpcResponse> responseFuture = new CompletableFuture<>();
+        AttributeKey<CompletableFuture<RpcResponse>> key = AttributeKey.valueOf("RPCResponseFuture");
+        channel.attr(key).set(responseFuture);
+        //发送数据
+        channel.writeAndFlush(request).sync();
+        RpcResponse response = responseFuture.get();
+        System.out.println(response);
+        return response;
+    }
+
+    private Channel getChannel(InetSocketAddress address) throws InterruptedException {
+        final InetSocketAddress cacheKey = address;
+        Channel channel = CHANNEL_CACHE.get(cacheKey);
+        if (channel != null && channel.isActive()) {
+            return channel;
+        }
+        synchronized (NettyRpcClient.class) {
+            channel = CHANNEL_CACHE.get(cacheKey);
+            if (channel != null && channel.isActive()) {
+                return channel;
+            }
+            ChannelFuture channelFuture = bootstrap.connect(address).sync();
+            channel = channelFuture.channel();
+            CHANNEL_CACHE.put(cacheKey, channel);
+            final Channel cachedChannel = channel;
+            cachedChannel.closeFuture().addListener(future -> CHANNEL_CACHE.remove(cacheKey, cachedChannel));
+            return channel;
+        }
     }
 }
