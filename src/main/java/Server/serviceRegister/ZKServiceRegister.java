@@ -18,6 +18,8 @@ import java.net.InetSocketAddress;
  * @ Description:
  */
 public class ZKServiceRegister implements ServiceRegister{
+    private static final boolean DEBUG_LOG = false;
+
     // curator 提供的zookeeper客户端
     private CuratorFramework client;
     //zookeeper根路径节点
@@ -34,7 +36,9 @@ public class ZKServiceRegister implements ServiceRegister{
         this.client = CuratorFrameworkFactory.builder().connectString("1.92.112.182:2181")
                 .sessionTimeoutMs(40000).retryPolicy(policy).namespace(ROOT_PATH).build();
         this.client.start();
-        System.out.println("zookeeper 连接成功");
+        if (DEBUG_LOG) {
+            System.out.println("zookeeper 连接成功");
+        }
     }
 
     //注册服务到注册中心
@@ -55,8 +59,10 @@ public class ZKServiceRegister implements ServiceRegister{
                 client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path);
             }
         }catch (Exception e){
-            e.printStackTrace();
-            System.out.println("此服务已存在");
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+                System.out.println("此服务已存在");
+            }
         }
     }
 

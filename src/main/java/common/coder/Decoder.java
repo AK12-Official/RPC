@@ -18,6 +18,9 @@ import java.util.List;
  * @ Description:自定义解码器
  */
 public class Decoder extends ByteToMessageDecoder {
+
+    private static final boolean DEBUG_LOG = false;
+
     @Override
     protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf in, List<Object> out) throws Exception {
         //1.读取消息类型
@@ -25,7 +28,9 @@ public class Decoder extends ByteToMessageDecoder {
 
         if(messageType != MessageType.REQUEST.getCode() &&
                 messageType != MessageType.RESPONSE.getCode()){
-            System.out.println("暂不支持此种数据");
+            if (DEBUG_LOG) {
+                System.out.println("暂不支持此种数据");
+            }
             return;
         }
         //2.读取序列化的方式&类型

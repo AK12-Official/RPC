@@ -20,6 +20,8 @@ import lombok.AllArgsConstructor;
  */
 @AllArgsConstructor
 public class NettyRPCServer implements RpcServer{
+    private static final boolean DEBUG_LOG = false;
+
     private ServiceProvider serviceProvider;
 
     @Override
@@ -27,7 +29,9 @@ public class NettyRPCServer implements RpcServer{
         //netty服务线程组boss负责建立连接，work负责具体的请求
         NioEventLoopGroup bossGroup = new NioEventLoopGroup();
         NioEventLoopGroup workGroup = new NioEventLoopGroup();
-        System.out.println("netty服务端启动了");
+        if (DEBUG_LOG) {
+            System.out.println("netty服务端启动了");
+        }
         try {
             //启动netty服务器
             ServerBootstrap serverBootstrap = new ServerBootstrap();
@@ -40,7 +44,9 @@ public class NettyRPCServer implements RpcServer{
             //死循环监听
             channelFuture.channel().closeFuture().sync();
         }catch (Exception e){
-            e.printStackTrace();
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+            }
         }finally {
             bossGroup.shutdownGracefully();
             workGroup.shutdownGracefully();

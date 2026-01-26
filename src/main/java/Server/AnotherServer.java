@@ -7,22 +7,22 @@ import common.service.Impl.UserServiceImpl;
 import common.service.UserService;
 
 /**
- * ClassName：TestServer
+ * ClassName：AnotherServer
  * Package: Server
  *
  * @ Author：zh
- * @ Create: 2026/1/13 10:31
+ * @ Create: 2026/1/25 16:42
  * @ Version: 1.0
- * @ Description:
+ * @ Description:NULL
  */
-public class TestServer {
+public class AnotherServer {
     public static void main(String[] args) {
         UserService userService=new UserServiceImpl();
 
-        ServiceProvider serviceProvider=new ServiceProvider("127.0.0.1",19999);
+        ServiceProvider serviceProvider=new ServiceProvider("127.0.0.1",9999);
         serviceProvider.provideServiceInterface(userService,true);
 
         RpcServer rpcServer=new NettyRPCServer(serviceProvider);
-        rpcServer.start(19999);
+        rpcServer.start(9999);
     }
 }

@@ -16,9 +16,13 @@ import java.util.UUID;
  * @ Description:
  */
 public class UserServiceImpl implements UserService {
+    private static final boolean DEBUG_LOG = false;
+
     @Override
     public User getUserByUserId(Integer id) {
-        System.out.println("客户端查询了"+id+"的用户");
+        if (DEBUG_LOG) {
+            System.out.println("客户端查询了" + id + "的用户");
+        }
         // 模拟从数据库中取用户的行为
         Random random = new Random();
         User user = User.builder().userName(UUID.randomUUID().toString())
@@ -29,7 +33,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Integer insertUserId(User user) {
-        System.out.println("插入数据成功"+user.getUserName());
+        if (DEBUG_LOG) {
+            System.out.println("插入数据成功" + user.getUserName());
+        }
         return user.getId();
     }
 }

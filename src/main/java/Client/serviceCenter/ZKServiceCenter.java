@@ -23,6 +23,8 @@ import java.util.List;
  * @ Description:
  */
 public class ZKServiceCenter implements ServiceCenter{
+    private static final boolean DEBUG_LOG = false;
+
     // curator 提供的zookeeper客户端
     private CuratorFramework client;
     //zookeeper根路径节点
@@ -44,7 +46,9 @@ public class ZKServiceCenter implements ServiceCenter{
         this.client = CuratorFrameworkFactory.builder().connectString("1.92.112.182:2181")
                 .sessionTimeoutMs(40000).retryPolicy(policy).namespace(ROOT_PATH).build();
         this.client.start();
-        System.out.println("zookeeper 连接成功");
+        if (DEBUG_LOG) {
+            System.out.println("zookeeper 连接成功");
+        }
         //初始化本地缓存
         cache=new serviceCache();
         //加入zookeeper事件监听器
@@ -83,7 +87,9 @@ public class ZKServiceCenter implements ServiceCenter{
             String address = loadBalance.balance(serviceList);
             return parseAddress(address);
         } catch (Exception e) {
-            e.printStackTrace();
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+            }
         }
         return null;
     }
@@ -104,7 +110,9 @@ public class ZKServiceCenter implements ServiceCenter{
     public boolean checkRetry(String serviceName) {
         boolean canRetry = cache.isInRetryWhitelist(serviceName);
         if (canRetry) {
-            System.out.println("服务"+serviceName+"在白名单上，可进行重试");
+            if (DEBUG_LOG) {
+                System.out.println("服务" + serviceName + "在白名单上，可进行重试");
+            }
         }
         return canRetry;
     }

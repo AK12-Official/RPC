@@ -17,6 +17,8 @@ import java.util.concurrent.CompletableFuture;
  * @ Description:
  */
 public class NettyClientHandler extends SimpleChannelInboundHandler<RpcResponse> {
+    private static final boolean DEBUG_LOG = false;
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RpcResponse response) throws Exception {
         // 接收到response, 给channel设计别名，让sendRequest里读取response
@@ -31,7 +33,9 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<RpcResponse>
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         //异常处理
-        cause.printStackTrace();
+        if (DEBUG_LOG) {
+            cause.printStackTrace();
+        }
         AttributeKey<CompletableFuture<RpcResponse>> key = AttributeKey.valueOf("RPCResponseFuture");
         CompletableFuture<RpcResponse> future = ctx.channel().attr(key).get();
         if (future != null) {

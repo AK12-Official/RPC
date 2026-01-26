@@ -15,6 +15,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @ Description:轮询算法负载均衡
  */
 public class RoundLoadBalance implements LoadBalance {
+    private static final boolean DEBUG_LOG = false;
+
     private final AtomicInteger index = new AtomicInteger(0);
     @Override
     public String balance(List<String> addressList) {
@@ -22,7 +24,9 @@ public class RoundLoadBalance implements LoadBalance {
             throw new IllegalArgumentException("addressList is empty");
         }
         int choose = Math.floorMod(index.getAndIncrement(), addressList.size());
-        System.out.println("负载均衡选择了" + choose + "服务器");
+        if (DEBUG_LOG) {
+            System.out.println("负载均衡选择了" + choose + "服务器");
+        }
         return addressList.get(choose);
     }
 

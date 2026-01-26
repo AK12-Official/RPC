@@ -15,13 +15,17 @@ import java.util.concurrent.ThreadLocalRandom;
  * @ Description:随机算法负载均衡
  */
 public class RandomLoadBalance implements LoadBalance {
+    private static final boolean DEBUG_LOG = false;
+
     @Override
     public String balance(List<String> addressList) {
         if (addressList == null || addressList.isEmpty()) {
             throw new IllegalArgumentException("addressList is empty");
         }
         int choose = ThreadLocalRandom.current().nextInt(addressList.size());
-        System.out.println("负载均衡选择了" + choose + "服务器");
+        if (DEBUG_LOG) {
+            System.out.println("负载均衡选择了" + choose + "服务器");
+        }
         return addressList.get(choose);
     }
 

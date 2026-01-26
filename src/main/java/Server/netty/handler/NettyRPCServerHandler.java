@@ -4,6 +4,7 @@ import Server.provider.ServiceProvider;
 import common.Message.RpcRequest;
 import common.Message.RpcResponse;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.AllArgsConstructor;
@@ -22,18 +23,22 @@ import java.lang.reflect.Method;
  */
 @AllArgsConstructor
 public class NettyRPCServerHandler extends SimpleChannelInboundHandler<RpcRequest> {
+    private static final boolean DEBUG_LOG = false;
+
     private ServiceProvider serviceProvider;
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RpcRequest request) throws Exception {
         //接收request，读取并调用服务
         RpcResponse response = getResponse(request);
-        ctx.writeAndFlush(response);
-        ctx.close();
+        // 确保响应 flush 完成后再关闭连接，避免偶发丢包导致客户端永久等待
+        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
+        if (DEBUG_LOG) {
+            cause.printStackTrace();
+        }
         ctx.close();
     }
 
@@ -49,8 +54,10 @@ public class NettyRPCServerHandler extends SimpleChannelInboundHandler<RpcReques
             Object invoke=method.invoke(service,rpcRequest.getParams());
             return RpcResponse.success(invoke);
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
-            System.out.println("方法执行错误");
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+                System.out.println("方法执行错误");
+            }
             return RpcResponse.fail();
         }
     }

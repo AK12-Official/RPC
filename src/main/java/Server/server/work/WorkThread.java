@@ -23,6 +23,8 @@ import java.net.Socket;
  */
 @AllArgsConstructor
 public class WorkThread implements Runnable{
+    private static final boolean DEBUG_LOG = false;
+
     private Socket socket;
     private ServiceProvider serviceProvider;
 
@@ -39,7 +41,9 @@ public class WorkThread implements Runnable{
             oos.writeObject(rpcResponse);
             oos.flush();
         }catch (IOException | ClassNotFoundException e){
-            e.printStackTrace();
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -57,8 +61,10 @@ public class WorkThread implements Runnable{
             Object invoke=method.invoke(service,rpcRequest.getParams());
             return RpcResponse.success(invoke);
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
-            System.out.println("方法执行错误");
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+                System.out.println("方法执行错误");
+            }
             return RpcResponse.fail();
         }
     }

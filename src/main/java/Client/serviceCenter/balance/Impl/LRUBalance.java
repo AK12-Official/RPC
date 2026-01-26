@@ -18,6 +18,8 @@ import java.util.Set;
  * @ Description:LRU算法负载均衡
  */
 public class LRUBalance implements LoadBalance {
+    private static final boolean DEBUG_LOG = false;
+
     private final Object lock = new Object();
 
     /**
@@ -51,7 +53,9 @@ public class LRUBalance implements LoadBalance {
             // 4) 标记为“最近使用”（移动到尾部）
             lruMap.get(chosen);
 
-            System.out.println("LRU负载均衡选择了服务器：" + chosen);
+            if (DEBUG_LOG) {
+                System.out.println("LRU负载均衡选择了服务器：" + chosen);
+            }
             return chosen;
         }
     }

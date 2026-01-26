@@ -17,6 +17,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @ Description:客户端本地缓存——存储服务信息
  */
 public class serviceCache {
+    private static final boolean DEBUG_LOG = false;
+
     //key: serviceName 服务名
     //value： addressList 服务提供者列表
     private static final Map<String, List<String>> cache = new ConcurrentHashMap<>();
@@ -31,7 +33,9 @@ public class serviceCache {
             addressList.add(address);
             return addressList;
         });
-        System.out.println("将name为"+serviceName+"和地址为"+address+"的服务添加到本地缓存中");
+        if (DEBUG_LOG) {
+            System.out.println("将name为" + serviceName + "和地址为" + address + "的服务添加到本地缓存中");
+        }
     }
 
     //修改服务地址
@@ -41,7 +45,9 @@ public class serviceCache {
             addressList.remove(oldAddress);
             addressList.add(newAddress);
         }else {
-            System.out.println("修改失败，服务不存在");
+            if (DEBUG_LOG) {
+                System.out.println("修改失败，服务不存在");
+            }
         }
     }
 
@@ -59,7 +65,9 @@ public class serviceCache {
         List<String> addressList = cache.get(serviceName);
         if (addressList != null) {
             addressList.remove(address);
-            System.out.println("将name为"+serviceName+"和地址为"+address+"的服务从本地缓存中删除");
+            if (DEBUG_LOG) {
+                System.out.println("将name为" + serviceName + "和地址为" + address + "的服务从本地缓存中删除");
+            }
         }
     }
 

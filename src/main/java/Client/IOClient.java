@@ -19,6 +19,8 @@ import java.net.Socket;
  */
 @Deprecated
 public class IOClient {
+    private static final boolean DEBUG_LOG = false;
+
     public static RpcResponse sendRequest(String host, int port, RpcRequest request) {
         try{
             Socket socket = new Socket(host, port);
@@ -31,7 +33,9 @@ public class IOClient {
             RpcResponse response = (RpcResponse) ois.readObject();
             return response;
         }catch(IOException | ClassNotFoundException e){
-            e.printStackTrace();
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+            }
             return null;
         }
     }

@@ -32,6 +32,8 @@ import java.util.concurrent.TimeUnit;
  *      工作队列：ArrayBlockingQueue<>(100)（容量 100）
  */
 public class ThreadPoolRPCServer implements RpcServer {
+    private static final boolean DEBUG_LOG = false;
+
     private final ThreadPoolExecutor threadPool;
     private ServiceProvider serviceProvider;
 
@@ -53,7 +55,9 @@ public class ThreadPoolRPCServer implements RpcServer {
 
     @Override
     public void start(int port) {
-        System.out.println("RPC Server starting...");
+        if (DEBUG_LOG) {
+            System.out.println("RPC Server starting...");
+        }
         try {
             ServerSocket serverSocket = new ServerSocket(port);
             while (true){
@@ -61,7 +65,9 @@ public class ThreadPoolRPCServer implements RpcServer {
                 threadPool.execute(new WorkThread(socket,serviceProvider));
             }
         }catch(IOException  e){
-            e.printStackTrace();
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+            }
         }
     }
 

@@ -23,9 +23,13 @@ import lombok.AllArgsConstructor;
 public class Encoder extends MessageToByteEncoder {
     private Serializer serializer;
 
+    private static final boolean DEBUG_LOG = false;
+
     @Override
     protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) throws Exception {
-        System.out.println(msg.getClass());
+        if (DEBUG_LOG) {
+            System.out.println(msg.getClass());
+        }
         //写入消息类型
         if(msg instanceof RpcRequest){
             out.writeShort(MessageType.REQUEST.getCode());

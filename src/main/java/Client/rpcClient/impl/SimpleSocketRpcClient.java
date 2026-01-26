@@ -20,6 +20,8 @@ import java.net.Socket;
  */
 @Deprecated
 public class SimpleSocketRpcClient implements RpcClient {
+    private static final boolean DEBUG_LOG = false;
+
     private String host;
     private int port;
     public SimpleSocketRpcClient(String host, int port) {
@@ -40,7 +42,9 @@ public class SimpleSocketRpcClient implements RpcClient {
             RpcResponse response=(RpcResponse) ois.readObject();
             return response;
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+            }
             return null;
         }
     }

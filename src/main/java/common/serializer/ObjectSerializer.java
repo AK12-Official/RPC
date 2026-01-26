@@ -14,6 +14,8 @@ import java.io.*;
  */
 public class ObjectSerializer implements Serializer{
 
+    private static final boolean DEBUG_LOG = false;
+
     //利用Java io 对象 -》字节数组
     @Override
     public byte[] serialize(Object obj) {
@@ -30,7 +32,9 @@ public class ObjectSerializer implements Serializer{
             oos.close();
             bos.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+            }
         }
         return bytes;
     }
@@ -46,7 +50,9 @@ public class ObjectSerializer implements Serializer{
             ois.close();
             bis.close();
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+            }
         }
         return obj;
     }

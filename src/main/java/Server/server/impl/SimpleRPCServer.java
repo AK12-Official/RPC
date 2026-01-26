@@ -22,13 +22,17 @@ import java.net.Socket;
 @Deprecated
 @AllArgsConstructor
 public class SimpleRPCServer implements RpcServer {
+    private static final boolean DEBUG_LOG = false;
+
     private ServiceProvider serviceProvider;
 
     @Override
     public void start(int port) {
         try {
             ServerSocket serverSocket = new ServerSocket(port);
-            System.out.println("服务器启动了");
+            if (DEBUG_LOG) {
+                System.out.println("服务器启动了");
+            }
             while (true) {
                 //如果没有连接，会堵塞在这里
                 Socket socket = serverSocket.accept();
@@ -36,7 +40,9 @@ public class SimpleRPCServer implements RpcServer {
                 new Thread(new WorkThread(socket, serviceProvider)).start();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+            }
         }
     }
 

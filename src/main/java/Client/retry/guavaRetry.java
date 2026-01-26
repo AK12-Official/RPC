@@ -18,6 +18,8 @@ import java.util.concurrent.TimeUnit;
  * @ Description:超时重试
  */
 public class guavaRetry {
+    private static final boolean DEBUG_LOG = false;
+
     private RpcClient rpcClient;
 
     public RpcResponse sendServiceWithRetry(RpcRequest request, RpcClient rpcClient) {
@@ -34,14 +36,18 @@ public class guavaRetry {
                 .withRetryListener(new RetryListener() {
                     @Override
                     public <V> void onRetry(Attempt<V> attempt) {
-                        System.out.println("RetryListener: 第" + attempt.getAttemptNumber() + "次调用");
+                        if (DEBUG_LOG) {
+                            System.out.println("RetryListener: 第" + attempt.getAttemptNumber() + "次调用");
+                        }
                     }
                 })
                 .build();
         try {
             return retryer.call(() -> rpcClient.sendRequest(request));
         } catch (Exception e) {
-            e.printStackTrace();
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+            }
         }
         return RpcResponse.fail();
     }

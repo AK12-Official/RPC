@@ -14,6 +14,8 @@ import java.util.*;
  * @ Description:一致性哈希算法负载均衡
  */
 public class ConsistencyHashBalance implements LoadBalance {
+    private static final boolean DEBUG_LOG = false;
+
     // 虚拟节点的个数
     private static final int VIRTUAL_NUM = 5;
 
@@ -29,12 +31,16 @@ public class ConsistencyHashBalance implements LoadBalance {
     private static void init(List<String> serviceList) {
         for (String server :serviceList) {
             realNodes.add(server);
-            System.out.println("真实节点[" + server + "] 被添加");
+            if (DEBUG_LOG) {
+                System.out.println("真实节点[" + server + "] 被添加");
+            }
             for (int i = 0; i < VIRTUAL_NUM; i++) {
                 String virtualNode = server + "&&VN" + i;
                 int hash = getHash(virtualNode);
                 shards.put(hash, virtualNode);
-                System.out.println("虚拟节点[" + virtualNode + "] hash:" + hash + "，被添加");
+                if (DEBUG_LOG) {
+                    System.out.println("虚拟节点[" + virtualNode + "] hash:" + hash + "，被添加");
+                }
             }
         }
     }
@@ -74,12 +80,16 @@ public class ConsistencyHashBalance implements LoadBalance {
     public  void addNode(String node) {
         if (!realNodes.contains(node)) {
             realNodes.add(node);
-            System.out.println("真实节点[" + node + "] 上线添加");
+            if (DEBUG_LOG) {
+                System.out.println("真实节点[" + node + "] 上线添加");
+            }
             for (int i = 0; i < VIRTUAL_NUM; i++) {
                 String virtualNode = node + "&&VN" + i;
                 int hash = getHash(virtualNode);
                 shards.put(hash, virtualNode);
-                System.out.println("虚拟节点[" + virtualNode + "] hash:" + hash + "，被添加");
+                if (DEBUG_LOG) {
+                    System.out.println("虚拟节点[" + virtualNode + "] hash:" + hash + "，被添加");
+                }
             }
         }
     }
@@ -93,12 +103,16 @@ public class ConsistencyHashBalance implements LoadBalance {
     public  void delNode(String node) {
         if (realNodes.contains(node)) {
             realNodes.remove(node);
-            System.out.println("真实节点[" + node + "] 下线移除");
+            if (DEBUG_LOG) {
+                System.out.println("真实节点[" + node + "] 下线移除");
+            }
             for (int i = 0; i < VIRTUAL_NUM; i++) {
                 String virtualNode = node + "&&VN" + i;
                 int hash = getHash(virtualNode);
                 shards.remove(hash);
-                System.out.println("虚拟节点[" + virtualNode + "] hash:" + hash + "，被移除");
+                if (DEBUG_LOG) {
+                    System.out.println("虚拟节点[" + virtualNode + "] hash:" + hash + "，被移除");
+                }
             }
         }
     }

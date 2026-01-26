@@ -16,6 +16,8 @@ import org.apache.curator.framework.recipes.cache.CuratorCacheListener;
  * @ Description:监听zookeeper节点变化更新本地缓存
  */
 public class watchZK {
+    private static final boolean DEBUG_LOG = false;
+
     // curator 提供的zookeeper客户端
     private CuratorFramework client;
     //本地缓存
@@ -65,10 +67,12 @@ public class watchZK {
                         }
                         break;
                     case "NODE_CHANGED": // 节点更新
-                        if (childData.getData() != null) {
-                            System.out.println("修改前的数据: " + new String(childData.getData()));
-                        } else {
-                            System.out.println("节点第一次赋值!");
+                        if (DEBUG_LOG) {
+                            if (childData.getData() != null) {
+                                System.out.println("修改前的数据: " + new String(childData.getData()));
+                            } else {
+                                System.out.println("节点第一次赋值!");
+                            }
                         }
                         String[] oldPathList=pasrePath(childData);
                         String[] newPathList=pasrePath(childData1);
@@ -76,7 +80,9 @@ public class watchZK {
                         if (!(oldPathList.length >= 2 && RETRY_PATH.equals(oldPathList[1]))) {
                             cache.replaceServiceAddress(oldPathList[1],oldPathList[2],newPathList[2]);
                         }
-                        System.out.println("修改后的数据: " + new String(childData1.getData()));
+                        if (DEBUG_LOG) {
+                            System.out.println("修改后的数据: " + new String(childData1.getData()));
+                        }
                         break;
                     case "NODE_DELETED": // 节点删除
                         String[] pathList_d= pasrePath(childData);

@@ -19,6 +19,8 @@ import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * ClassName：NettyRpcClient
@@ -30,6 +32,8 @@ import java.util.concurrent.ExecutionException;
  * @ Description:
  */
 public class NettyRpcClient implements RpcClient {
+
+    private static final boolean DEBUG_LOG = false;
 
     private static final Bootstrap bootstrap;
     private static final EventLoopGroup eventLoopGroup;
@@ -57,16 +61,18 @@ public class NettyRpcClient implements RpcClient {
         try {
             return sendWithRetry(address, request);
         } catch (Exception e) {
-            e.printStackTrace();
+            if (DEBUG_LOG) {
+                e.printStackTrace();
+            }
         }
         return null;    //Should not reach here
     }
 
     private RpcResponse sendWithRetry(InetSocketAddress address, RpcRequest request)
-            throws InterruptedException, ExecutionException, ClosedChannelException {
+            throws InterruptedException, ExecutionException, ClosedChannelException, TimeoutException {
         try {
             return sendOnce(address, request);
-        } catch (ClosedChannelException e) {
+        } catch (ClosedChannelException | TimeoutException e) {
             Channel cached = CHANNEL_CACHE.get(address);
             if (cached != null) {
                 CHANNEL_CACHE.remove(address, cached);
@@ -76,7 +82,7 @@ public class NettyRpcClient implements RpcClient {
     }
 
     private RpcResponse sendOnce(InetSocketAddress address, RpcRequest request)
-            throws InterruptedException, ExecutionException, ClosedChannelException {
+            throws InterruptedException, ExecutionException, ClosedChannelException, TimeoutException {
         Channel channel = getChannel(address);
         if (!channel.isActive()) {
             CHANNEL_CACHE.remove(address, channel);
@@ -87,8 +93,18 @@ public class NettyRpcClient implements RpcClient {
         channel.attr(key).set(responseFuture);
         //发送数据
         channel.writeAndFlush(request).sync();
-        RpcResponse response = responseFuture.get();
-        System.out.println(response);
+        RpcResponse response;
+        try {
+            // 防止服务端/网络异常导致永久阻塞
+            response = responseFuture.get(5, TimeUnit.SECONDS);
+        } catch (TimeoutException timeoutException) {
+            channel.attr(key).set(null);
+            channel.close();
+            throw timeoutException;
+        }
+        if (DEBUG_LOG) {
+            System.out.println(response);
+        }
         return response;
     }
 
